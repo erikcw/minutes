@@ -172,6 +172,15 @@ describe("ported skill guidance", () => {
     expect(body).toContain("Do not synthesize a week that has no source material");
   });
 
+  it("keeps all three weekly orderings, including the memo-heavy instruction", () => {
+    const body = bodyOf("weekly_review", { focus: "memos" });
+    expect(body).toContain("Order the sections for this focus: memos");
+    expect(body).toContain("- decisions: decision arcs");
+    expect(body).toContain("- commitments: commitment audit");
+    expect(body).toContain("voice memos and captured ideas surfaced explicitly");
+    expect(body).toContain("If the focus is none of those");
+  });
+
   it("keeps the concrete opening line requirement in the person briefing", () => {
     const body = bodyOf("person_briefing", { name: "Sarah" });
     expect(body).toContain("Open with");
