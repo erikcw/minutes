@@ -129,6 +129,71 @@ export const MINUTES_PROMPTS: MinutesPromptDefinition[] = [
       ]),
   },
   {
+    name: "weekly_review",
+    title: "Review this week's meetings",
+    description:
+      "Synthesize the past week into themes, decision arcs, overdue commitments, and what deserves attention next.",
+    args: [
+      {
+        name: "focus",
+        description:
+          "Optional ordering preference: decisions, commitments, or memos. Defaults to themes first.",
+        required: false,
+      },
+    ],
+    build: ({ focus }) => {
+      const ordering =
+        focus === MISSING_ARG
+          ? "Default ordering: themes, then decision arcs, then the commitment audit, then what deserves attention next."
+          : `Lead with what I asked for first: ${focus}. Keep the remaining sections in their normal order behind it.`;
+      return joinSections([
+        "Synthesize my last seven days of meetings and voice memos into a forward-looking brief.",
+        "Gather first:",
+        [
+          "1. list_meetings, then keep only entries whose date falls in the last seven days. Do not search for a date string; dates live in frontmatter, not in transcript text.",
+          "2. Resolve each kept entry with get_meeting.",
+          "3. get_meeting_insights for this week's decisions, and search_meetings on each recurring topic over the last 30 days so you can see how a decision moved.",
+          "4. track_commitments for what is open or stale, and consistency_report for decisions that contradict each other.",
+        ].join("\n"),
+        "Then produce:",
+        [
+          "**Themes** - the three to five topics that came up in two or more recordings. For each: which meetings, how the conversation moved, and whether it resolved.",
+          "**Decision arcs** - a table of decisions with a status of STABLE (held across mentions), VOLATILE (changed twice or more in 14 days), CONFLICTING (two contradictory decisions are both live), or NEW. Call out CONFLICTING items prominently; they are the ones that cost real time.",
+          "**Commitment audit** - completed, on track, overdue, and owed to me by someone else. State overdue items factually, with the date and who is waiting. Do not nag.",
+          "**Attention next** - a ranked list. Order by conflicting decisions, then overdue commitments, then open commitments.",
+        ].join("\n"),
+        ordering,
+        CORPUS_RULES,
+        "If there were no recordings in the last seven days, say exactly that and offer to widen the window to 14 days. Do not synthesize a week that has no source material. If there were only one or two, still write the brief and note that it was a light week.",
+      ]);
+    },
+  },
+  {
+    name: "find_action_items",
+    title: "Find action items for a person",
+    description:
+      "Surface every open commitment a person owes or is owed, with the meeting each came from.",
+    args: [
+      {
+        name: "person",
+        description: "Name of the person whose action items you want.",
+        required: true,
+      },
+    ],
+    build: ({ person }) =>
+      joinSections([
+        `Show me the open action items involving ${person}.`,
+        [
+          `1. track_commitments filtered to ${person}.`,
+          `2. get_meeting_insights for commitments mentioning ${person}, so items captured as insights are not missed.`,
+          "3. Resolve the source meeting of anything unclear with get_meeting before you describe it.",
+        ].join("\n"),
+        "Group the result into what they owe me and what I owe them. For each item give the commitment as it was actually stated, the meeting and date it came from, and the due date if there is one. Sort overdue items to the top.",
+        CORPUS_RULES,
+        `If track_commitments fails or returns a partial view, say the commitment projection is unavailable. Do not tell me ${person} has nothing open.`,
+      ]),
+  },
+  {
     name: "person_briefing",
     title: "Brief me on a person",
     description:
@@ -173,6 +238,38 @@ export const MINUTES_PROMPTS: MinutesPromptDefinition[] = [
         CORPUS_RULES,
         SPEAKER_RULES,
         `If the searches come back empty, say plainly that no matching history was found for ${name} and stop there. Never invent a relationship history. Keep the body under about 25 lines; if it is longer, it has filler in it.`,
+      ]),
+  },
+  {
+    name: "topic_research",
+    title: "Research a topic across meetings",
+    description:
+      "Trace how a topic developed across meetings: what was decided, what is still open, and where it was discussed most.",
+    args: [
+      {
+        name: "topic",
+        description: "The topic, project, or question to trace across your meeting history.",
+        required: true,
+      },
+    ],
+    build: ({ topic }) =>
+      joinSections([
+        `Research ${topic} across my meeting history.`,
+        [
+          `1. research_topic for ${topic}.`,
+          "2. search_meetings with two or three different phrasings. Search is substring matching, not fuzzy: \"price\" finds \"pricing\", but a typo finds nothing, and a phrase people would actually say beats a title.",
+          "3. Resolve the meetings that matter with get_meeting.",
+          "4. get_meeting_insights for decisions on this topic, and consistency_report if the decisions look like they disagree.",
+        ].join("\n"),
+        "Then give me:",
+        [
+          "**How it developed** - a timeline of the discussion, oldest to newest, one line per meeting. Show where the thinking changed and why.",
+          "**Where it landed** - the decisions that are currently live, with dates. If two live decisions contradict, say so outright.",
+          "**Still open** - questions raised and never answered, and commitments still outstanding.",
+          "**Who drives it** - who raises this topic most, and who has been quiet on it.",
+        ].join("\n"),
+        CORPUS_RULES,
+        SPEAKER_RULES,
       ]),
   },
   {
