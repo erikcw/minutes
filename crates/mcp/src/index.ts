@@ -85,6 +85,7 @@ import {
   validatePathInDirectory,
 } from "./paths.js";
 import { isCliCompatible } from "./version.js";
+import { registerMinutesPrompts } from "./prompts.js";
 import {
   hasFeature,
   probeCapabilitiesSync,
@@ -4334,6 +4335,7 @@ export type ServerSurface = {
   tools: string[];
   resources: string[];
   resourceTemplates: string[];
+  prompts: string[];
 };
 
 /**
@@ -4349,6 +4351,10 @@ export function describeServerSurface(target: McpServer): ServerSurface {
     resourceTemplates: Object.keys(
       internals._registeredResourceTemplates ?? {}
     ).sort(),
+    // Without this, a prompts registration that never reaches the builder list
+    // would still pass the factory-parity assertions: both sides would report
+    // an identical surface that simply omits prompts.
+    prompts: Object.keys(internals._registeredPrompts ?? {}).sort(),
   };
 }
 
@@ -7026,6 +7032,21 @@ registerDocsAppTool(
     };
   }
 );
+
+// ── Prompts ─────────────────────────────────────────────────
+
+// Reusable guidance templates (prompts/list, prompts/get). Every prompt body
+// is a static template plus sanitized user arguments — no corpus reads — so
+// unlike the content-bearing resources below they need no readiness gate. The
+// content-free constraint is enforced in prompts.ts and its tests.
+//
+// Recorded like every other registration so an HTTP session's own McpServer
+// serves prompts/list too. registerMinutesPrompts keeps no module state — it
+// only walks the static MINUTES_PROMPTS table — so replaying it needs no
+// teardown.
+forEachServer((target) => {
+  registerMinutesPrompts(target);
+});
 
 // ── Resources ───────────────────────────────────────────────
 
