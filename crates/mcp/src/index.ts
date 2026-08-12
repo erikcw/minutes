@@ -119,6 +119,7 @@ import {
   type BoundReadHooks,
 } from "./secure-read.js";
 import {
+  forgetDeferrableTools,
   installToolSearchMode,
   isToolSearchEnabled,
   recordDeferrableTool,
@@ -9084,6 +9085,11 @@ registerTool(
 // meta-tools live on a single McpServer, and an HTTP session gets its own. A
 // global install would leave HTTP advertising all 34 schemas while stdio
 // showed three.
+//
+// The teardown is unconditional because recordDeferrableTool runs on every
+// registration whether or not the mode is on. Without it a long-lived HTTP
+// process accumulates one entry per tool per session forever, and the dedup
+// scan inside recordDeferrableTool turns that into quadratic cost.
 
 /** Singleton install result, so main() can log it once instead of per session. */
 let toolSearchSummary: { deferredCount: number; metaToolNames: string[] } | null =
@@ -9099,6 +9105,7 @@ forEachServer((target) => {
       });
     }
   }
+  return () => forgetDeferrableTools(target);
 });
 
 // ── Transport selection ─────────────────────────────────────

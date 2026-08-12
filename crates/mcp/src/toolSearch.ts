@@ -81,6 +81,23 @@ export function deferrableToolsFor(server: McpServer): DeferrableTool[] {
   return deferrable.filter((entry) => entry.server === server);
 }
 
+/**
+ * Drop every registration recorded against one server.
+ *
+ * The registry is process-global and keyed by instance, which was fine when
+ * there was exactly one long-lived server. With the HTTP transport each
+ * session builds its own, so without this the array grows by the full tool
+ * count per session and never shrinks — and `recordDeferrableTool` scans it
+ * linearly, so the cost of registering session N grows with N.
+ */
+export function forgetDeferrableTools(server: McpServer): void {
+  for (let i = deferrable.length - 1; i >= 0; i--) {
+    if (deferrable[i].server === server) {
+      deferrable.splice(i, 1);
+    }
+  }
+}
+
 /** Test seam: drop every recorded registration. */
 export function resetDeferrableTools(): void {
   deferrable.length = 0;

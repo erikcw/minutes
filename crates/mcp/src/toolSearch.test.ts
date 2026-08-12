@@ -7,6 +7,8 @@ import { z } from "zod";
 import {
   TOOL_SEARCH_ENV,
   TOOL_SEARCH_FLAG,
+  deferrableToolsFor,
+  forgetDeferrableTools,
   installToolSearchMode,
   isToolSearchEnabled,
   recordDeferrableTool,
@@ -182,5 +184,41 @@ describe("installToolSearchMode", () => {
     const result: any = await client.callTool({ name: "list_capabilities", arguments: {} });
 
     expect(JSON.parse(textOf(result)).tools.map((tool: any) => tool.name)).toEqual(["echo_tool"]);
+  });
+});
+
+describe("forgetDeferrableTools", () => {
+  beforeEach(() => {
+    resetDeferrableTools();
+  });
+
+  // One HTTP session's teardown must not disturb another's, and a session that
+  // has closed must not keep its tools in the process-global registry.
+  it("drops one server's registrations and leaves the rest", () => {
+    const first = new McpServer({ name: "first", version: "0.0.0" });
+    const second = new McpServer({ name: "second", version: "0.0.0" });
+    const stub = (server: McpServer, name: string) =>
+      recordDeferrableTool(
+        server,
+        name,
+        server.tool(name, "Stub", {}, {}, async () => ({
+          content: [{ type: "text" as const, text: "" }],
+        }))
+      );
+
+    stub(first, "alpha");
+    stub(first, "beta");
+    stub(second, "alpha");
+
+    forgetDeferrableTools(first);
+
+    expect(deferrableToolsFor(first)).toEqual([]);
+    expect(deferrableToolsFor(second).map((entry) => entry.name)).toEqual(["alpha"]);
+  });
+
+  it("is a no-op for a server that recorded nothing", () => {
+    const server = new McpServer({ name: "empty", version: "0.0.0" });
+    expect(() => forgetDeferrableTools(server)).not.toThrow();
+    expect(deferrableToolsFor(server)).toEqual([]);
   });
 });

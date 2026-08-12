@@ -56,6 +56,12 @@ after that instance's tools are registered. Installing it once against the
 stdio singleton instead would leave HTTP sessions advertising the full
 schema dump while stdio showed three.
 
+Instance teardown drops that server's entries from the deferrable registry
+(`forgetDeferrableTools`). That registry is populated on every tool
+registration whether or not the mode is enabled, so the teardown is
+unconditional; without it a long-lived HTTP process grows the registry by the
+full tool count per session.
+
 ## Trade-offs
 
 - **MCP Apps dashboard.** Eleven tools carry `_meta.ui.resourceUri` linking
