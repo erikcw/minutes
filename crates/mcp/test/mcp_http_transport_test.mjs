@@ -6,7 +6,7 @@
  * Starts the built server in `--transport http` mode and drives it over real
  * HTTP. Covers:
  *  1. initialize + tools/list round trip via the MCP SDK client
- *  2. the HTTP surface matches stdio (tools, resources) — the
+ *  2. the HTTP surface matches stdio (tools, resources, prompts) — the
  *     per-session server factory is what could silently drop registrations,
  *     so parity against a stdio round trip is the check that matters. Eight
  *     tools and two resources sit behind CLI capability gates, and the two
@@ -220,8 +220,10 @@ try {
     try {
       const stdioTools = (await stdioClient.listTools()).tools.map((t) => t.name);
       const stdioResources = (await stdioClient.listResources()).resources.map((r) => r.uri);
+      const stdioPrompts = (await stdioClient.listPrompts()).prompts.map((p) => p.name).sort();
       const overHttpTools = httpTools.map((t) => t.name);
       const overHttpResources = httpResources.map((r) => r.uri);
+      const overHttpPrompts = (await httpClient.listPrompts()).prompts.map((p) => p.name).sort();
 
       // What each process's own probe decided, read from the line that
       // process wrote with its own pid. This is the witness that separates
@@ -319,6 +321,20 @@ try {
       } else {
         console.log(`  ${describeStateDivergence("http", httpState, "stdio", stdioState)}`);
       }
+
+      // 3. Prompts are not capability-gated at all, so they stay an exact
+      //    comparison. This is the default HTTP config, which is what most
+      //    clients will actually run.
+      assert(stdioPrompts.length > 0, "stdio should expose prompts");
+      assertEqual(
+        overHttpPrompts.join(","),
+        stdioPrompts.join(","),
+        `prompt surface drift.\n  stdio only: ${stdioPrompts.filter((n) => !overHttpPrompts.includes(n))}\n  http only: ${overHttpPrompts.filter((n) => !stdioPrompts.includes(n))}`
+      );
+      assert(
+        overHttpPrompts.includes("meeting_prep"),
+        "meeting_prep must be served over HTTP"
+      );
 
       console.log(
         `  (core tools ${coreTools.length}, gated ${httpGated.length}/${Object.keys(CAPABILITY_GATED_TOOLS).length}, ` +
