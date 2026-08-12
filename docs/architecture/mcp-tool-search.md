@@ -62,6 +62,9 @@ registration whether or not the mode is enabled, so the teardown is
 unconditional; without it a long-lived HTTP process grows the registry by the
 full tool count per session.
 
+`crates/mcp/test/http_tool_search_prompts_test.mjs` covers the combination
+over three sequential HTTP sessions.
+
 ## Trade-offs
 
 - **MCP Apps dashboard.** Eleven tools carry `_meta.ui.resourceUri` linking
