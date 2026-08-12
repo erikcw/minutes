@@ -38,7 +38,6 @@ const MISSING_ARG = "(not specified)";
  */
 export function sanitizePromptArg(value: string | undefined): string {
   if (typeof value !== "string") return MISSING_ARG;
-  // eslint-disable-next-line no-control-regex
   const flattened = value.replace(/[\u0000-\u001F\u007F]+/g, " ");
   const collapsed = flattened.replace(/\s+/g, " ").trim();
   if (collapsed === "") return MISSING_ARG;
