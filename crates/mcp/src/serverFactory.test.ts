@@ -17,10 +17,12 @@ describe("createMinutesServer", () => {
     try {
       expect(baseline.tools.length).toBeGreaterThan(0);
       expect(baseline.resources.length).toBeGreaterThan(0);
+      expect(baseline.prompts.length).toBeGreaterThan(0);
       const surface = describeServerSurface(instance.server);
       expect(surface.tools).toEqual(baseline.tools);
       expect(surface.resources).toEqual(baseline.resources);
       expect(surface.resourceTemplates).toEqual(baseline.resourceTemplates);
+      expect(surface.prompts).toEqual(baseline.prompts);
     } finally {
       instance.dispose();
     }
@@ -33,6 +35,9 @@ describe("createMinutesServer", () => {
       expect(first.server).not.toBe(second.server);
       expect(describeServerSurface(first.server).tools).toEqual(
         describeServerSurface(second.server).tools
+      );
+      expect(describeServerSurface(first.server).prompts).toEqual(
+        describeServerSurface(second.server).prompts
       );
     } finally {
       first.dispose();
