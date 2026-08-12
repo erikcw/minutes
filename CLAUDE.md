@@ -220,7 +220,7 @@ minutes/
 │   ├── cli/                   # CLI binary — 58 commands
 │   ├── reader/                # Lightweight read-only meeting parser (no audio deps)
 │   ├── assets/                # Bundled assets (demo.wav)
-│   └── mcp/                   # MCP server — 35 tools + 8 resources + MCP App dashboard
+│   └── mcp/                   # MCP server — 35 tools + 8 resources + 7 prompts + MCP App dashboard
 │       └── ui/                # Interactive dashboard (vanilla TS, builds to single-file HTML)
 ├── site/                      # Landing page (Next.js + Remotion demo player)
 ├── tauri/                     # Tauri v2 menu bar app + singleton AI Assistant
@@ -343,7 +343,8 @@ work" more than once. Grep before you design.
 
 ## Claude Ecosystem Integration
 
-- **MCP Server**: 35 tools + 8 resources for Claude Desktop / Cowork / Dispatch (`npx minutes-mcp` for zero-install)
+- **MCP Server**: 35 tools + 8 resources + 7 prompts for Claude Desktop / Cowork / Dispatch (`npx minutes-mcp` for zero-install)
+- **MCP prompts**: reusable guidance templates (`crates/mcp/src/prompts.ts`) covering meeting prep, person briefings, weekly review, action items, topic research, and search coaching. Prompt bodies are static templates plus sanitized user arguments — no corpus reads — which is why they need no readiness gate. The first six names mirror `manifest.json`'s `prompts` array; `test/mcp_prompts_test.mjs` fails if the two surfaces drift.
 - **Claude Code Plugin**: 23 skills + meeting-analyst agent + SessionStart + PostToolUse hooks
 - **Interactive meeting lifecycle**: `/minutes-brief` → `/minutes-prep` → record → `/minutes-tag` → `/minutes-debrief` → `/minutes-mirror` → `/minutes-weekly` with skill chaining via `.brief.md` / `.prep.md` files; `/minutes-graph` for cross-meeting entity queries
 - **Conversational summarization**: Claude reads transcripts via MCP, no API key needed
