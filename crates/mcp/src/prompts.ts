@@ -144,7 +144,15 @@ export const MINUTES_PROMPTS: MinutesPromptDefinition[] = [
       const ordering =
         focus === MISSING_ARG
           ? "Default ordering: themes, then decision arcs, then the commitment audit, then what deserves attention next."
-          : `Lead with what I asked for first: ${focus}. Keep the remaining sections in their normal order behind it.`;
+          : [
+              `Order the sections for this focus: ${focus}`,
+              "",
+              "- decisions: decision arcs, themes, commitment audit, attention next.",
+              "- commitments: commitment audit, decision arcs, themes, attention next.",
+              "- memos: themes first, with voice memos and captured ideas surfaced explicitly inside the theme summary, then the commitment audit, decision arcs, attention next.",
+              "",
+              "If the focus is none of those, keep the default order (themes, decision arcs, commitment audit, attention next) and lead with whatever it names.",
+            ].join("\n");
       return joinSections([
         "Synthesize my last seven days of meetings and voice memos into a forward-looking brief.",
         "Gather first:",
