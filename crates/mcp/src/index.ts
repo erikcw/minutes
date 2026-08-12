@@ -7599,7 +7599,7 @@ registerTool(
 export const MCP_AGENT_ANNOTATIONS_UNAVAILABLE_DESCRIPTION =
   "Compatibility name only: unavailable in MCP because an annotation's source pointer and body are both author-supplied, so revalidating the pointer cannot bound what the body discloses.";
 export const MCP_MEETING_INSIGHTS_DESCRIPTION =
-  "Query structured insights extracted from meetings (decisions, commitments, questions) with confidence levels. Each insight records the path of the meeting it came from. That path is resolved against the live corpus, and the resolved meeting is re-read from disk and re-verified against the live sensitivity policy before release; a path that does not resolve into this corpus is withheld. Released records carry the source title and path as recorded, which may name a location outside this corpus. Withheld records are reported as a partial view, not an empty one.";
+  "Query structured insights extracted from meetings (decisions, commitments, questions) with confidence levels. Each insight records the path of the meeting it came from. That path is resolved to a meeting in the live corpus, and the resolved meeting is re-read from disk and re-verified against the live sensitivity policy before release; a path that does not resolve into this corpus is withheld. Released records carry the source title and path as they were recorded, which may name a location outside this corpus. Withheld records are reported as a partial view, not an empty one.";
 
 function unavailableDerivedRecordResult(message: string) {
   return {
@@ -8154,7 +8154,7 @@ export function registerUnavailableCompatibilityTools(
         .optional()
         .default(false)
         .describe(
-          "Include insights whose source meeting is designated sensitivity: restricted. Requires the server to have been launched with MINUTES_MCP_RESTRICTED_POLICY=logged-override; the request is durably audited. It does not recover insights withheld for any other reason: an archived or deleted source, or a recorded path that does not resolve to a meeting in this corpus."
+          "Include insights whose source meeting is designated sensitivity: restricted. Requires the server to have been launched with MINUTES_MCP_RESTRICTED_POLICY=logged-override; the request is durably audited. It does not recover insights withheld for any other reason: an archived or deleted source, or a recorded path that cannot be resolved to a meeting in this corpus."
         ),
     },
     { title: "Get Meeting Insights", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
