@@ -73,6 +73,26 @@ full tool count per session.
   1 KB per `describe_tool`. Break-even against the full list is around 23
   distinct tools per session - see the numbers below.
 
+## Measuring it
+
+```bash
+cd crates/mcp && npm run build && npm run measure:tools-list
+```
+
+Prints both modes side by side and fails if the advertised list is not well
+under the default. `--json` emits the same report as machine-readable JSON.
+Observed on a 34-tool surface:
+
+| | default | `--tool-search` |
+|---|---|---|
+| tools advertised | 34 | 3 |
+| `tools/list` chars | 32,704 | 1,828 |
+| estimated tokens | 8,176 | 457 |
+
+Tool counts are environment-dependent, since some tools register only when the
+installed CLI reports the matching capability, so the script reports what it
+observes rather than asserting a fixed number.
+
 ## Tests
 
 - `crates/mcp/src/toolSearch.test.ts` - unit tests over an in-memory transport
