@@ -4518,7 +4518,7 @@ registerAppResourceOnEveryServer(
 
 registerTool(
  "start_recording",
-  "Start recording audio with call-aware preflight. When a known call app is active, Minutes can infer call intent and block silent mic-only call captures unless explicitly allowed. Note: this server does not listen to audio content. Recordings are stopped by invoking stop_recording after the user types a request in chat — never promise the user they can speak a 'stop recording' voice command.",
+  "Start recording with call-aware preflight: when a known call app is active, Minutes can infer call intent and block a silent mic-only capture unless explicitly allowed. This server does not listen to audio content. Stop only by invoking stop_recording after the user types a request in chat; never promise the user a spoken 'stop recording' command.",
   {
     title: z.string().optional().describe("Optional title for this recording"),
     mode: z
@@ -7501,13 +7501,13 @@ registerTool(
   "add_agent_annotation",
   "Append attributed agent commentary as an agent.annotation event. This never edits meeting markdown/frontmatter and is rejected unless the agent_id is allowed in ~/.minutes/agents.allow.",
   {
-    agent_id: z.string().describe("Stable agent identifier listed in ~/.minutes/agents.allow"),
-    tools: z.array(z.string()).optional().default([]).describe("Tool or model names used to produce the annotation"),
+    agent_id: z.string().describe("Agent identifier listed in ~/.minutes/agents.allow"),
+    tools: z.array(z.string()).optional().default([]).describe("Tools or models used to produce the annotation"),
     subkind: z.string().optional().default("commentary").describe("Annotation subtype, e.g. coaching, correction, risk, summary"),
-    meeting_id: z.string().optional().describe("Target meeting identifier, if known"),
+    meeting_id: z.string().optional().describe("Target meeting id, if known"),
     meeting_path: z.string().optional().describe("Target meeting markdown path, if known"),
-    span_start_ms: z.number().optional().describe("Start offset of the target span in milliseconds"),
-    span_end_ms: z.number().optional().describe("End offset of the target span in milliseconds"),
+    span_start_ms: z.number().optional().describe("Target span start offset, ms"),
+    span_end_ms: z.number().optional().describe("Target span end offset, ms"),
     body: z.string().describe("Annotation body"),
     citations: z.array(z.string()).optional().default([]).describe("Source citations or event references"),
     confidence: z.enum(["low", "medium", "high", "tentative", "inferred", "strong", "explicit"]).optional().default("medium"),
@@ -7599,7 +7599,7 @@ registerTool(
 export const MCP_AGENT_ANNOTATIONS_UNAVAILABLE_DESCRIPTION =
   "Compatibility name only: unavailable in MCP because an annotation's source pointer and body are both author-supplied, so revalidating the pointer cannot bound what the body discloses.";
 export const MCP_MEETING_INSIGHTS_DESCRIPTION =
-  "Query structured insights extracted from meetings, decisions, commitments and questions with confidence levels. Each insight records a path to the meeting it was derived from; that path is resolved to a meeting in the live corpus, and the resolved meeting is re-read from disk and re-verified against the live sensitivity policy before the insight is released. A path that cannot be resolved into this corpus is withheld. Released records carry the source title and path as they were recorded, which may name a location outside this corpus. Withheld records are reported as a partial view rather than an empty one.";
+  "Query structured insights extracted from meetings (decisions, commitments, questions) with confidence levels. Each insight records the path of the meeting it came from. That path is resolved against the live corpus, and the resolved meeting is re-read from disk and re-verified against the live sensitivity policy before release; a path that does not resolve into this corpus is withheld. Released records carry the source title and path as recorded, which may name a location outside this corpus. Withheld records are reported as a partial view, not an empty one.";
 
 function unavailableDerivedRecordResult(message: string) {
   return {
@@ -8154,7 +8154,7 @@ export function registerUnavailableCompatibilityTools(
         .optional()
         .default(false)
         .describe(
-          "Include insights whose source meeting is designated sensitivity: restricted. Requires the server to have been launched with MINUTES_MCP_RESTRICTED_POLICY=logged-override; the request is durably audited. This does not recover insights withheld for any other reason, such as a source that was archived or deleted, or one whose recorded path cannot be resolved to a meeting in this corpus."
+          "Include insights whose source meeting is designated sensitivity: restricted. Requires the server to have been launched with MINUTES_MCP_RESTRICTED_POLICY=logged-override; the request is durably audited. It does not recover insights withheld for any other reason: an archived or deleted source, or a recorded path that does not resolve to a meeting in this corpus."
         ),
     },
     { title: "Get Meeting Insights", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -8829,7 +8829,7 @@ registerTool(
 
 registerTool(
   "resummarize_meeting",
-  "Re-run the AI pass (summary, action items, decisions) on an edited meeting or memo. Preview by default: returns the regenerated content WITHOUT writing — note the summarization model IS still invoked (cost applies even in preview). Set apply=true to write the file (a timestamped backup is created and derived views — graph, search index, vault, QMD — refresh automatically). User edits outside AI-owned sections are never touched; checked action items and decision notes are carried forward by the merge.",
+  "Re-run the AI pass (summary, action items, decisions) on an edited meeting or memo. Preview by default: returns regenerated content WITHOUT writing, but the summarization model IS still invoked, so cost applies. apply=true writes the file, taking a timestamped backup and refreshing derived views (graph, search index, vault, QMD). User edits outside AI-owned sections are never touched; checked action items and decision notes carry forward through the merge.",
   {
     path: z.string().describe("Path to the meeting/memo .md file to resummarize."),
     apply: z
