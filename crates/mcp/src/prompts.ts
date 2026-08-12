@@ -97,6 +97,85 @@ function joinSections(sections: string[]): string {
  */
 export const MINUTES_PROMPTS: MinutesPromptDefinition[] = [
   {
+    name: "meeting_prep",
+    title: "Prepare for an upcoming meeting",
+    description:
+      "Pull the decisions, open commitments, and context worth reviewing before a meeting on a given topic.",
+    args: [
+      {
+        name: "meeting_topic",
+        description: "What the upcoming meeting is about (a topic, project, or agenda item).",
+        required: true,
+      },
+    ],
+    build: ({ meeting_topic }) =>
+      joinSections([
+        `I have a meeting coming up about: ${meeting_topic}`,
+        "Give me the context I need before I walk in. Work in this order:",
+        [
+          `1. search_meetings for ${meeting_topic}. Search for what people would have said, not for a document title, and keep the result limit small.`,
+          "2. Resolve the two or three most relevant hits with get_meeting. Do not read more than three; this is a briefing, not a research report.",
+          "3. get_meeting_insights for decisions on this topic, and track_commitments for anything still owed.",
+        ].join("\n"),
+        "Then give me four short sections, in this order:",
+        [
+          "**Already settled** - decisions that are locked in, with the date each was made.",
+          "**Still open** - questions raised and never resolved.",
+          "**Who owes what** - open commitments touching this topic, with owner and due date. Flag anything overdue.",
+          "**Worth raising** - one concrete thing I should put on the table, phrased so I could say it out loud.",
+        ].join("\n"),
+        CORPUS_RULES,
+        "Keep the whole thing to one screen. Cut anything that would not change what I do in the meeting.",
+      ]),
+  },
+  {
+    name: "person_briefing",
+    title: "Brief me on a person",
+    description:
+      "A one-page briefing on someone before a call: recent history, what they are focused on, open commitments, and a concrete opening line.",
+    args: [
+      {
+        name: "name",
+        description: "Name of the person you are about to meet.",
+        required: true,
+      },
+    ],
+    build: ({ name }) =>
+      joinSections([
+        `Brief me on ${name} before my next conversation with them. I want to read this in 60 seconds.`,
+        "Gather these in parallel, then synthesize only from what actually came back:",
+        [
+          `1. get_person_profile for ${name}.`,
+          `2. search_meetings for ${name}, limited to the last 60 days and a small result count.`,
+          `3. get_meeting_insights for decisions involving ${name} in the last 30 days.`,
+          `4. track_commitments filtered to ${name}.`,
+          "5. Resolve at most the two most recent meetings with get_meeting. Past three, you are padding.",
+        ].join("\n"),
+        "Write the brief in exactly this shape:",
+        [
+          `# Brief: ${name}`,
+          "",
+          "**Last conversation** (date) - two or three sentences of prose, including the tone if the transcript makes it clear. If the most recent meeting is three or more months old, lead with that fact; my sense of the relationship is probably more current than reality.",
+          "",
+          "**They have been thinking about** - three to five topics from the last 30 days, ordered by recency and frequency.",
+          "",
+          "**Commitments** - what is open in each direction, with dates. Flag overdue items.",
+          "",
+          "**Where things stand** - one line: warming, cooling, stable, urgent, or drifting.",
+          "",
+          "**Open with** - one sentence I could say verbatim at the top of the call. It has to cite something specific from our actual history.",
+        ].join("\n"),
+        [
+          "The opening line is the part that matters. \"Hey, how is everything going?\" is filler that could be said to anyone. \"Last time you said the hiring freeze was making your roadmap impossible - did legal come back on the contractor question?\" is usable, because only our history could produce it.",
+          "",
+          "Be specific everywhere else too. \"They want to talk about Q2\" is useless; \"they have raised the Q2 hiring freeze in three of their last four meetings\" is not.",
+        ].join("\n"),
+        CORPUS_RULES,
+        SPEAKER_RULES,
+        `If the searches come back empty, say plainly that no matching history was found for ${name} and stop there. Never invent a relationship history. Keep the body under about 25 lines; if it is longer, it has filler in it.`,
+      ]),
+  },
+  {
     name: "start_meeting",
     title: "Start recording a meeting",
     description:
