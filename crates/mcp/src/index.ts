@@ -118,6 +118,11 @@ import {
   type BoundReadExpectation,
   type BoundReadHooks,
 } from "./secure-read.js";
+import {
+  installToolSearchMode,
+  isToolSearchEnabled,
+  recordDeferrableTool,
+} from "./toolSearch.js";
 
 crashTrace("imports-complete");
 
@@ -727,13 +732,15 @@ export function registerToolWithRestrictedPolicy(
   handler: (...args: any[]) => any,
   readiness?: () => Promise<unknown>
 ) {
-  return serverArg.tool(
+  const registered = serverArg.tool(
     name,
     withToolDocs(name, description),
     inputSchema as any,
     annotations as any,
     withAgentToolPolicies(name, handler, readiness) as any
   );
+  recordDeferrableTool(serverArg, name, registered);
+  return registered;
 }
 
 function registerTool(
@@ -764,7 +771,7 @@ export function registerDocsAppToolWithRestrictedPolicy(
   const description =
     typeof config.description === "string" ? config.description : "";
 
-  return registerAppTool(
+  const registered = registerAppTool(
     serverArg,
     name,
     {
@@ -773,6 +780,8 @@ export function registerDocsAppToolWithRestrictedPolicy(
     } as any,
     withAgentToolPolicies(name, handler) as any
   );
+  recordDeferrableTool(serverArg, name, registered);
+  return registered;
 }
 
 function registerDocsAppTool(
@@ -9068,6 +9077,30 @@ registerTool(
   }
 );
 
+// ── Tool-search mode ────────────────────────────────────────
+// Recorded last, so by the time it runs on any instance every tool that could
+// be deferred is already registered on that instance. It has to be a builder
+// rather than a one-shot call in main(): the tools/list override and the three
+// meta-tools live on a single McpServer, and an HTTP session gets its own. A
+// global install would leave HTTP advertising all 34 schemas while stdio
+// showed three.
+
+/** Singleton install result, so main() can log it once instead of per session. */
+let toolSearchSummary: { deferredCount: number; metaToolNames: string[] } | null =
+  null;
+
+forEachServer((target) => {
+  if (isToolSearchEnabled()) {
+    const summary = installToolSearchMode(target);
+    if (target === server) {
+      toolSearchSummary = summary;
+      crashTrace("tool-search-installed", {
+        deferredCount: summary.deferredCount,
+      });
+    }
+  }
+});
+
 // ── Transport selection ─────────────────────────────────────
 // stdio stays the default so every existing client config keeps working
 // untouched. `--transport http` is opt-in and documented as localhost-only.
@@ -9204,11 +9237,12 @@ function printUsage(): void {
       `  --host <address>          HTTP bind address (default: ${DEFAULT_HTTP_HOST})`,
       `  --port <number>           HTTP port, 0 for an OS-assigned port (default: ${DEFAULT_HTTP_PORT})`,
       `  --max-sessions <number>   Concurrent HTTP sessions (default: ${DEFAULT_MAX_SESSIONS})`,
+      "  --tool-search             Advertise 3 meta-tools instead of every schema",
       "  --demo                    Install the bundled demo corpus and exit",
       "  --help                    Show this message",
       "",
       "Environment: MINUTES_MCP_TRANSPORT, MINUTES_MCP_HOST, MINUTES_MCP_PORT,",
-      "             MINUTES_MCP_MAX_SESSIONS",
+      "             MINUTES_MCP_MAX_SESSIONS, MINUTES_MCP_TOOL_SEARCH",
       "",
       "HTTP mode serves Streamable HTTP at /mcp and has no authentication. It",
       "binds 127.0.0.1 so only this machine can reach it — do not bind a public",
@@ -9221,6 +9255,11 @@ function printUsage(): void {
 
 async function main() {
   crashTrace("main-start");
+  if (toolSearchSummary) {
+    console.error(
+      `Tool-search mode: ${toolSearchSummary.deferredCount} tools deferred behind ${toolSearchSummary.metaToolNames.join(", ")}`
+    );
+  }
   const config = parseTransportConfig(process.argv.slice(2));
 
   if (config.help) {

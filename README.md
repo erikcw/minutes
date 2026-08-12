@@ -521,6 +521,8 @@ Flags: `--host` (default `127.0.0.1`), `--port` (default `7373`; `0` asks the OS
 
 HTTP mode has no authentication. It binds `127.0.0.1`, so only this machine can reach it, and it rejects requests whose `Host` or `Origin` is not loopback. That second check matters: binding to loopback does not by itself stop a web page you have open from POSTing to a local port. Do not bind a public address or forward the port.
 
+**Smaller tool list (opt-in):** add `--tool-search` to the args (or set `MINUTES_MCP_TOOL_SEARCH=1`) and `tools/list` returns three meta-tools (`list_capabilities`, `describe_tool`, `call_tool`) instead of every tool's full schema. The tools stay callable; only their advertisement is deferred, which cuts the always-on payload from ~33 KB to ~1.8 KB. Default behaviour is unchanged. It applies to both transports, so `--transport http --tool-search` gives every HTTP session the deferred list. See [docs/architecture/mcp-tool-search.md](docs/architecture/mcp-tool-search.md).
+
 Canonical MCP reference now lives at:
 
 - <https://useminutes.app/docs/mcp/tools>
