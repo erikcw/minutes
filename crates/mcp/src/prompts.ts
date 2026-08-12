@@ -120,6 +120,40 @@ export const MINUTES_PROMPTS: MinutesPromptDefinition[] = [
         "Recording and transcription happen locally on my machine. Do not tell me the transcript is ready until a tool result says it is.",
       ]),
   },
+  {
+    name: "search_coaching",
+    title: "Search my meetings (with coaching)",
+    description:
+      "Turn a vague recall question into a search that actually finds the meeting, instead of running a query that returns hundreds of hits or none.",
+    args: [
+      {
+        name: "query",
+        description: "What you are trying to find in your meeting history.",
+        required: true,
+      },
+    ],
+    build: ({ query }) =>
+      joinSections([
+        `I am trying to find this in my meeting history: ${query}`,
+        "Before running anything, check whether the query is actually searchable. Push back first if it matches one of these, then search once I have narrowed it:",
+        [
+          "- \"everything\" or \"all my meetings\": that returns hundreds of results. Ask what I am actually after - a person, a topic, or a decision.",
+          "- A single common word like \"meeting\" or \"project\": too broad. Ask for a name, a specific topic, or a date range.",
+          "- \"that meeting\" or \"the one where\": ask what I do remember. Who was there, roughly when, or one thing that was said.",
+          "- \"who said X\" or \"what did someone say\": this is answerable, but it depends on speaker attribution, so read the caveat below before answering.",
+        ].join("\n"),
+        "If the query is specific enough, search it directly. Match the strategy to what I am looking for:",
+        [
+          "- A person's input: search their name.",
+          "- A decision: search the words people use when deciding, such as \"decided\", \"agreed\", or \"committed to\".",
+          "- An idea I captured alone: filter to voice memos.",
+          "- Something from a stretch of time: use a date filter, as an ISO date like 2026-03-01. Compute the ISO date yourself; the filter does not understand \"last week\".",
+        ].join("\n"),
+        "Search matches substrings against transcript text and titles, so search for what someone would have said out loud (\"we should postpone the launch\") rather than what a document would be called (\"launch delay meeting\"). A typo matches nothing, so if a term comes back empty, try a different wording before concluding it was never discussed. Always keep a result limit; a common word can match hundreds of files.",
+        CORPUS_RULES,
+        SPEAKER_RULES,
+      ]),
+  },
 ];
 
 /**
